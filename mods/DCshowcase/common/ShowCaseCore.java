@@ -24,7 +24,8 @@ import cpw.mods.fml.common.registry.LanguageRegistry;
 @Mod(
 		modid = "DCsShowCase",
 		name = "ShowCaseAddon",
-		version = "1.6.2_1.0a"
+		version = "1.6.2_1.0a",
+		dependencies = "required-after:MCEconomy"
 		)
 @NetworkMod(
 		clientSideRequired = true,
@@ -46,10 +47,10 @@ public class ShowCaseCore{
 	
 	public static String[] OPNames = new String[] {"Single"};
 	
-	public static final String SELE_MESSAGE = "Purchased the item ";
-	public static final String CANCELL_MESSAGE = "Canceled the sale of the item ";
-	public static final String MP_GET_MESSAGE = " bought your item ";
-	public static final String PUT_MESSAGE = "Registered sele item ";
+	public static String SELE_MESSAGE = "Purchased the item ";
+	public static String CANCELL_MESSAGE = "Canceled the sale of the item ";
+	public static String MP_GET_MESSAGE = " bought your item ";
+	public static String PUT_MESSAGE = "Registered sele item ";
 	
 	public static int renderShowCase = -1;
 	
@@ -85,6 +86,8 @@ public class ShowCaseCore{
 	@EventHandler
 	public void init(FMLInitializationEvent event)
 	{
+		//Registering rrice for sale
+		(new RegisterMPForSale()).regster();
 		
 		//Registering new recipe
 		GameRegistry.addRecipe(

@@ -20,6 +20,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Icon;
 import net.minecraft.util.MathHelper;
+import net.minecraft.village.Village;
 import net.minecraft.world.World;
 
 public class BlockShowCase extends BlockContainer {
@@ -32,7 +33,8 @@ public class BlockShowCase extends BlockContainer {
 	{
 		super(blockid, Material.iron);
 		this.setHardness(2.0F);
-		this.setResistance(2.0F);
+		this.setResistance(15.0F);
+		this.setTickRandomly(true);
 	}
 	
 	//右クリックされた時の処理
@@ -48,7 +50,7 @@ public class BlockShowCase extends BlockContainer {
 			{
 				String owner = tile.getOwner();
 				
-				if (owner.equalsIgnoreCase(thisPlayer))//owner以外は変更できない
+				if (owner.equalsIgnoreCase(thisPlayer) && !tile.hasSellItem())//owner以外は変更できない
 				{
 					int prevMode = tile.mode;
 					prevMode++;
@@ -84,6 +86,18 @@ public class BlockShowCase extends BlockContainer {
 					int price = tile.getPrice();
 					int mode = tile.getMode();
 					
+					String priceString;
+					
+					if (price > 0)
+					{
+						priceString = price + "MP";
+					}
+					else
+					{
+						priceString = "Not for sale";
+					}
+					
+					
 					if (!par1World.isRemote)
 					{
 						//ブロックのオーナー
@@ -92,7 +106,21 @@ public class BlockShowCase extends BlockContainer {
 						if (saleItem != null && !seller.equalsIgnoreCase("None"))
 						{
 							//販売者とアイテム
-							par5EntityPlayer.addChatMessage("Current sale item by " + seller + " : " + saleItem.getDisplayName() + "x" + saleItem.stackSize + ", " + price + "MP");
+							par5EntityPlayer.addChatMessage("Current sale item by " + seller + " : " + saleItem.getDisplayName() + "x" + saleItem.stackSize + ", " + priceString);
+						}
+						
+						if (mode == 2)
+						{
+							Village village = par1World.villageCollectionObj.findNearestVillage(par2, par3, par4, 32);
+							if (village != null)
+							{
+								int num = village.getNumVillagers();
+								par5EntityPlayer.addChatMessage("Inside the Village ( Villagers : " + num + " )");
+							}
+							else
+							{
+								par5EntityPlayer.addChatMessage("No village");
+							}
 						}
 					}
 				}
@@ -149,75 +177,71 @@ public class BlockShowCase extends BlockContainer {
 					{
 						ItemStack sellItem = tile.getSellItem();
 						EntityPlayer sellerPlayer = par1World.getPlayerEntityByName(seller);
-//						int currentMP = MCEconomyAPI.getPlayerMP(par5EntityPlayer);
-						int currentMP = 200;//デバッグ用
+						int currentMP = MCEconomyAPI.getPlayerMP(par5EntityPlayer);
+//						int currentMP = 200;//デバッグ用
 						
-						if (mode < 2 && currentMP > price)//お金が足りているか
+						if (price > 0)//販売用であるか
 						{
-							if (!par5EntityPlayer.inventory.addItemStackToInventory(sellItem))
+							if (mode < 2 && currentMP > price && sellerPlayer != null && sellerPlayer.isEntityAlive())//お金が足りているか & 販売者が生きているか
 							{
-								par5EntityPlayer.dropPlayerItem(sellItem);
-							}
-							
-							//お金のやりとり
-//							MCEconomyAPI.reducePlayerMP(par5EntityPlayer, price);
-//							if (sellerPlayer != null) MCEconomyAPI.addPlayerMP(sellerPlayer, price);
-							
-							//お知らせ
-							if (!par1World.isRemote)
-							{
-								if (sellerPlayer != null) sellerPlayer.addChatMessage(par5EntityPlayer.getDisplayName() + ShowCaseCore.MP_GET_MESSAGE + " : " + sellItem.getDisplayName() + ", " + tile.price + "MP");
-								par5EntityPlayer.addChatMessage(ShowCaseCore.SELE_MESSAGE + " : " + sellItem.getDisplayName() + ", " + tile.price + "MP");
-								par1World.playSoundAtEntity(par5EntityPlayer, "random.pop", 0.4F, 1.8F);
-							}
-							
-							//tileのリセット
-							tile.setSellerName("None");
-							tile.setPrice(0);
-							tile.setSellItem((ItemStack)null);
-							tile.onInventoryChanged();
-							par5EntityPlayer.inventory.onInventoryChanged();
-							
-							return true;
-						}
-					}
-				}
-				else//アイテムを投入する
-				{
-					if (mode == 1)//privateモード時
-					{
-						if (blockOwner.equalsIgnoreCase(thisPlayer) && current != null)//owner以外入れられない
-						{
-//							int currentPrice = MCEconomyAPI.getPurchase(current);//MP売却額の取得
-							int currentPrice = 100;
-							
-							if (currentPrice > 0)//0や-1の物は除外する
-							{
-								tile.setSellItem(current);
-								tile.setPrice(currentPrice);
-								tile.setSellerName(thisPlayer);
-								tile.onInventoryChanged();
+								if (!par5EntityPlayer.inventory.addItemStackToInventory(sellItem))
+								{
+									par5EntityPlayer.dropPlayerItem(sellItem);
+								}
 								
-								par5EntityPlayer.inventory.setInventorySlotContents(par5EntityPlayer.inventory.currentItem, (ItemStack)null);
-								par5EntityPlayer.inventory.onInventoryChanged();
+								//お金のやりとり
+								MCEconomyAPI.reducePlayerMP(par5EntityPlayer, price);
+								MCEconomyAPI.addPlayerMP(sellerPlayer, price);
 								
 								//お知らせ
 								if (!par1World.isRemote)
 								{
-									par5EntityPlayer.addChatMessage(ShowCaseCore.PUT_MESSAGE + " : " + current.getDisplayName() + ", " + tile.price + "MP");
+									if (sellerPlayer != null) sellerPlayer.addChatMessage(par5EntityPlayer.getDisplayName() + ShowCaseCore.MP_GET_MESSAGE + " : " + sellItem.getDisplayName() + ", " + tile.price + "MP");
+									par5EntityPlayer.addChatMessage(ShowCaseCore.SELE_MESSAGE + " : " + sellItem.getDisplayName() + "x" + sellItem.stackSize + ", " + tile.price + "MP");
 									par1World.playSoundAtEntity(par5EntityPlayer, "random.pop", 0.4F, 1.8F);
 								}
+								
+								//tileのリセット
+								tile.setSellerName("None");
+								tile.setPrice(0);
+								tile.setSellItem((ItemStack)null);
+								tile.onInventoryChanged();
+								par5EntityPlayer.inventory.onInventoryChanged();
+								
+								return true;
 							}
-							return true;
 						}
-					}
-					else if (current != null)//他のモードならだれでも入れられる
-					{
-//						int currentPrice = MCEconomyAPI.getPurchase(current);//MP売却額の取得
-						int currentPrice = 100;
 						
-						if (currentPrice > 0)//0や-1の物は除外する
+					}
+				}
+				else//アイテムを投入する
+				{
+					if (mode == 1 || mode == 3)//private・displayモード時
+					{
+						if (blockOwner.equalsIgnoreCase(thisPlayer) && current != null)//owner以外入れられない
 						{
+							int currentPrice = MCEconomyAPI.getPurchase(current);//MP売却額の取得
+//							
+							if (currentPrice > 0)//販売可能物である
+							{
+								currentPrice *= current.stackSize;
+							}
+							else
+							{
+								currentPrice = -1;
+							}
+							
+							String priceString;
+							
+							if (price > 0)
+							{
+								priceString = currentPrice + "MP";
+							}
+							else
+							{
+								priceString = "Not for sale";
+							}
+							
 							tile.setSellItem(current);
 							tile.setPrice(currentPrice);
 							tile.setSellerName(thisPlayer);
@@ -229,9 +253,49 @@ public class BlockShowCase extends BlockContainer {
 							//お知らせ
 							if (!par1World.isRemote)
 							{
-								par5EntityPlayer.addChatMessage(ShowCaseCore.PUT_MESSAGE + " : " + current.getDisplayName() + ", " + tile.price + "MP");
+								par5EntityPlayer.addChatMessage(ShowCaseCore.PUT_MESSAGE + " : " + current.getDisplayName() + "x" + current.stackSize + ", " + priceString);
 								par1World.playSoundAtEntity(par5EntityPlayer, "random.pop", 0.4F, 1.8F);
 							}
+							return true;
+						}
+					}
+					else if (current != null)//他のモードならだれでも入れられる
+					{
+						int currentPrice = MCEconomyAPI.getPurchase(current);//MP売却額の取得
+//						
+						if (currentPrice > 0)//販売可能物である
+						{
+							currentPrice *= current.stackSize;
+						}
+						else
+						{
+							currentPrice = -1;
+						}
+						
+						String priceString;
+						
+						if (price > 0)
+						{
+							priceString = currentPrice + "MP";
+						}
+						else
+						{
+							priceString = "Not for sale";
+						}
+						
+						tile.setSellItem(current);
+						tile.setPrice(currentPrice);
+						tile.setSellerName(thisPlayer);
+						tile.onInventoryChanged();
+						
+						par5EntityPlayer.inventory.setInventorySlotContents(par5EntityPlayer.inventory.currentItem, (ItemStack)null);
+						par5EntityPlayer.inventory.onInventoryChanged();
+						
+						//お知らせ
+						if (!par1World.isRemote)
+						{
+							par5EntityPlayer.addChatMessage(ShowCaseCore.PUT_MESSAGE + " : " + current.getDisplayName() + "x" + current.stackSize + ", " + priceString);
+							par1World.playSoundAtEntity(par5EntityPlayer, "random.pop", 0.4F, 1.8F);
 						}
 						return true;
 					}
@@ -240,6 +304,55 @@ public class BlockShowCase extends BlockContainer {
 			}
 			return false;
 		}
+	}
+	
+	//村判定内での処理
+	public void updateTick(World par1World, int par2, int par3, int par4, Random par5Random)
+	{
+		if (par1World.isDaytime())//昼間に動作する
+		{
+			TileShowCase tile = (TileShowCase) par1World.getBlockTileEntity(par2, par3, par4);
+			Village currentVillage = par1World.villageCollectionObj.findNearestVillage(par2, par3, par4, 32);
+			int meta = par1World.getBlockMetadata(par2, par3, par4);
+			
+			if (tile != null && currentVillage != null && tile.getMode() == 2)//villageモード
+			{
+				ItemStack sale = tile.getSellItem();
+				int price = tile.getPrice();
+				EntityPlayer seller = par1World.getPlayerEntityByName(tile.getSellerName());
+				
+				int num = currentVillage.getNumVillagers();
+				
+				if (sale != null && seller != null && price > 0 && seller.isEntityAlive())
+				{
+					int probability = (num * 25 * par1World.rand.nextInt(num)) / price;//村の人数に比例、価格に反比例
+					
+					if (probability > 1)
+					{
+						//お金のやりとり
+						MCEconomyAPI.addPlayerMP(seller, price);
+						
+						//お知らせ
+						if (!par1World.isRemote)
+						{
+							seller.addChatMessage("Villager" + ShowCaseCore.MP_GET_MESSAGE + " : " + sale.getDisplayName() + "x" + sale.stackSize + ", " + tile.price + "MP");
+							par1World.playSoundAtEntity(seller, "random.pop", 0.4F, 1.8F);
+						}
+						
+						//tileのリセット
+						tile.setSellerName("None");
+						tile.setPrice(0);
+						tile.setSellItem((ItemStack)null);
+						tile.onInventoryChanged();
+						
+						//レンダーが更新されないので、無理やりメタデータを変えて更新を起こしている
+						par1World.setBlockMetadataWithNotify(par2, par3, par4, 15, 3);
+						par1World.setBlockMetadataWithNotify(par2, par3, par4, meta, 3);
+					}
+				}
+			}
+		}
+		super.updateTick(par1World, par2, par3, par4, par5Random);
 	}
 	
 	//周辺に中に入っていたアイテムは販売者のインベントリに突っ込まれる
@@ -277,7 +390,7 @@ public class BlockShowCase extends BlockContainer {
 						entityitem.motionY = (double)((float)this.rand.nextGaussian() * f3 + 0.2F);
 						entityitem.motionZ = (double)((float)this.rand.nextGaussian() * f3);
 						
-						if (seller != null)
+						if (seller != null && seller.isEntityAlive())
 						{
 							if (!seller.inventory.addItemStackToInventory(itemstack))
 							{
@@ -310,8 +423,6 @@ public class BlockShowCase extends BlockContainer {
 		{
 			tile.setOwnerName(owner.getDisplayName());
 			tile.onInventoryChanged();
-			owner.addChatMessage(owner.getDisplayName());
-			owner.addChatMessage(tile.getOwner());
 		}
 	}
 	

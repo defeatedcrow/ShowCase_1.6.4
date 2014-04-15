@@ -129,7 +129,7 @@ public class RenderShowCase extends TileEntitySpecialRenderer
             entityitem.getEntityItem().stackSize = 1;
             entityitem.hoverStart = 0.0F;
             
-            GL11.glScalef(1.5F, 1.5F, 1.5F);
+            GL11.glScalef(1.2F, 1.2F, 1.2F);
             
             RenderItem.renderInFrame = false;
             RenderManager.instance.renderEntityWithPosYaw(entityitem, 0.0D, 0.0D, 0.0D, 0.0F, 0.0F);
@@ -142,7 +142,7 @@ public class RenderShowCase extends TileEntitySpecialRenderer
     	ItemStack item = par0Tile.getSellItem();
         String price = par0Tile.getPrice() + "MP";
 
-        if (item != null)
+        if (item != null && par0Tile.getPrice() > 0)
         {
             //render font
             FontRenderer fontrenderer = this.getFontRenderer();
