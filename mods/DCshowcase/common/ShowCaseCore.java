@@ -24,13 +24,12 @@ import cpw.mods.fml.common.registry.LanguageRegistry;
 @Mod(
 		modid = "DCsShowCase",
 		name = "ShowCaseAddon",
-		version = "1.6.2_1.0a",
+		version = "1.6.2_1.0c",
 		dependencies = "required-after:MCEconomy"
 		)
 @NetworkMod(
 		clientSideRequired = true,
-		serverSideRequired = false,
-		channels = "tileShowCase", packetHandler = SCPacketHandler.class
+		serverSideRequired = false
 		)
 
 public class ShowCaseCore{
@@ -86,8 +85,6 @@ public class ShowCaseCore{
 	@EventHandler
 	public void init(FMLInitializationEvent event)
 	{
-		//Registering rrice for sale
-		(new RegisterMPForSale()).regster();
 		
 		//Registering new recipe
 		GameRegistry.addRecipe(

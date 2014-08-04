@@ -44,7 +44,7 @@ public class BlockShowCase extends BlockContainer {
 		if (par5EntityPlayer.isSneaking() && par5EntityPlayer.inventory.getCurrentItem() == null)//モード変更に使用する
 		{
 			TileShowCase tile = (TileShowCase) par1World.getBlockTileEntity(par2, par3, par4);
-			String thisPlayer = par5EntityPlayer.getDisplayName();
+			String thisPlayer = par5EntityPlayer.username;
 			
 			if (tile != null)
 			{
@@ -134,7 +134,7 @@ public class BlockShowCase extends BlockContainer {
 			
 			String blockOwner = "None";
 			String seller = "None";
-			String thisPlayer = par5EntityPlayer.getDisplayName();
+			String thisPlayer = par5EntityPlayer.username;
 			
 			
 			if (tile != null)
@@ -196,7 +196,7 @@ public class BlockShowCase extends BlockContainer {
 								//お知らせ
 								if (!par1World.isRemote)
 								{
-									if (sellerPlayer != null) sellerPlayer.addChatMessage(par5EntityPlayer.getDisplayName() + ShowCaseCore.MP_GET_MESSAGE + " : " + sellItem.getDisplayName() + ", " + tile.price + "MP");
+									if (sellerPlayer != null) sellerPlayer.addChatMessage(par5EntityPlayer.username + ShowCaseCore.MP_GET_MESSAGE + " : " + sellItem.getDisplayName() + ", " + tile.price + "MP");
 									par5EntityPlayer.addChatMessage(ShowCaseCore.SELE_MESSAGE + " : " + sellItem.getDisplayName() + "x" + sellItem.stackSize + ", " + tile.price + "MP");
 									par1World.playSoundAtEntity(par5EntityPlayer, "random.pop", 0.4F, 1.8F);
 								}
